@@ -1,0 +1,31 @@
+venv/
+__pycache__/
+*.py[cod]
+*.bak
+*.tmp
+.idea/
+.vscode/
+
+# Generated compiler outputs
+*.ll
+*.o
+*.s
+
+# Generated example executables
+examples/break_test
+examples/cli_test
+examples/for_loop
+examples/functions
+examples/logical
+examples/loops
+examples/name_collision
+examples/recursion
+examples/simple
+examples/srs_b1
+examples/srs_b2
+examples/srs_b3
+examples/srs_b4
+
+# Backup files
+*.backup
+*.scope-backup
