@@ -1,0 +1,29 @@
+C Minor Compiler
+Version: 0.1.0
+Target: x86_64-pc-linux-gnu
+LLVM toolchain: Ubuntu LLVM version 21.1.8
+
+Available components:
+- Lexer
+- Parser and AST
+- Semantic Analyzer
+- Symbol Table
+- Student Intermediate Representation
+- LLVM Backend
+
+Supported backend: LLVM
+QBE backend: Not implemented
+
+Accepted source form: One self-contained C Minor source file
+Preprocessing: Disabled
+Preprocessor directives and line splicing: Rejected
+
+Minimum tested input capacities:
+- Source size: 32 KiB
+- Tokens: 4,000
+- Block nesting: 16 levels
+- Expression nesting: 16 levels
+- Function definitions: 32
+- Parameters per function: 6
+- Local declarations per block: 64
+- Source line length: 2,048 characters

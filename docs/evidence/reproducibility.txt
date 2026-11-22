@@ -1,0 +1,6 @@
+REPRODUCIBILITY CHECK — byte-for-byte output comparison
+--dump-tokens: PASS — identical output
+--dump-ast: PASS — identical output
+--dump-symbols: PASS — identical output
+--dump-ir: PASS — identical output
+--emit-backend-ir: PASS — identical output

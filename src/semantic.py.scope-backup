@@ -1,0 +1,613 @@
+from dataclasses import dataclass
+
+from src.parser import (
+    Program,
+    Function,
+    FunctionPrototype,
+    VariableDeclaration,
+    Block,
+    ReturnStatement,
+    IfStatement,
+    WhileStatement,
+    ForStatement,
+    BreakStatement,
+    ContinueStatement,
+    ExpressionStatement,
+    Number,
+    Identifier,
+    BinaryOperation,
+    UnaryOperation,
+    Assignment,
+    FunctionCall,
+)
+
+
+# ==========================================
+# 1. SEMANTIC ERROR
+# ==========================================
+
+class SemanticError(Exception):
+    pass
+
+
+# ==========================================
+# 2. SYMBOL AND FUNCTION INFORMATION
+# ==========================================
+
+@dataclass
+class Symbol:
+    name: str
+    symbol_type: str
+    data_type: str
+
+
+@dataclass
+class FunctionInfo:
+    name: str
+    return_type: str
+    parameter_types: list
+    defined: bool = False
+
+
+# ==========================================
+# 3. SCOPE MANAGEMENT
+# ==========================================
+
+class Scope:
+
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.symbols = {}
+
+    def define(self, symbol):
+        if symbol.name in self.symbols:
+            raise SemanticError(
+                f"Duplicate declaration of '{symbol.name}'"
+            )
+
+        self.symbols[symbol.name] = symbol
+
+    def lookup(self, name):
+        if name in self.symbols:
+            return self.symbols[name]
+
+        if self.parent is not None:
+            return self.parent.lookup(name)
+
+        return None
+
+
+class SymbolTable:
+
+    def __init__(self):
+        self.scopes = []
+        self.next_scope_id = 0
+        self.current_scope = self.create_scope()
+
+    def create_scope(self, parent=None):
+        scope = Scope(parent)
+        scope.scope_id = self.next_scope_id
+        self.next_scope_id += 1
+        self.scopes.append(scope)
+        return scope
+
+    def enter_scope(self):
+        self.current_scope = self.create_scope(
+            parent=self.current_scope
+        )
+
+    def exit_scope(self):
+        if self.current_scope.parent is not None:
+            self.current_scope = self.current_scope.parent
+
+    def declare(self, name, symbol_type, data_type):
+        symbol = Symbol(
+            name,
+            symbol_type,
+            data_type
+        )
+
+        self.current_scope.define(symbol)
+
+    def lookup(self, name):
+        return self.current_scope.lookup(name)
+
+
+# ==========================================
+# 4. SEMANTIC ANALYZER
+# ==========================================
+
+class SemanticAnalyzer:
+
+    def __init__(self):
+        self.symbol_table = SymbolTable()
+        self.functions = {}
+        self.visible_functions = set()
+        self.loop_depth = 0
+        self.current_function = None
+
+    # ======================================
+    # MAIN ANALYSIS
+    # ======================================
+
+    def analyze(self, program):
+
+        if not isinstance(program, Program):
+            raise SemanticError("Invalid program AST")
+
+        self.symbol_table = SymbolTable()
+        self.functions = {}
+        self.visible_functions = set()
+
+        self.loop_depth = 0
+        self.current_function = None
+
+        self.collect_functions(program)
+
+        main = self.functions.get("main")
+
+        if main is None or not main.defined:
+            raise SemanticError(
+                "Program must contain a definition of main"
+            )
+
+        if main.return_type != "int" or main.parameter_types:
+            raise SemanticError(
+                "main must be defined as int main(void)"
+            )
+
+        # Analyze declarations in source order.
+        for declaration in program.declarations:
+
+            if isinstance(declaration, FunctionPrototype):
+                self.visible_functions.add(
+                    declaration.name
+                )
+
+            elif isinstance(declaration, Function):
+
+                self.visible_functions.add(
+                    declaration.name
+                )
+
+                self.analyze_function(declaration)
+
+        # Every declared function must have a definition.
+        for name, info in self.functions.items():
+
+            if not info.defined:
+                raise SemanticError(
+                    f"Function '{name}' was declared "
+                    "but not defined"
+                )
+
+        return True
+
+    # ======================================
+    # FUNCTION COLLECTION AND VALIDATION
+    # ======================================
+
+    def collect_functions(self, program):
+
+        for declaration in program.declarations:
+
+            if not isinstance(
+                declaration,
+                (Function, FunctionPrototype)
+            ):
+                raise SemanticError(
+                    "Invalid top-level declaration"
+                )
+
+            name = declaration.name
+            return_type = declaration.return_type
+
+            parameter_types = [
+                parameter.param_type
+                for parameter in declaration.parameters
+            ]
+
+            if len(parameter_types) > 6:
+                raise SemanticError(
+                    f"Function '{name}' cannot have "
+                    "more than 6 parameters"
+                )
+
+            if any(t != "int" for t in parameter_types):
+                raise SemanticError(
+                    f"Function '{name}' has an invalid parameter type"
+                )
+
+            existing = self.functions.get(name)
+
+            if existing is None:
+
+                self.functions[name] = FunctionInfo(
+                    name,
+                    return_type,
+                    parameter_types,
+                    isinstance(declaration, Function)
+                )
+
+            else:
+
+                if (
+                    existing.return_type != return_type
+                    or existing.parameter_types != parameter_types
+                ):
+                    raise SemanticError(
+                        f"Conflicting declaration of function '{name}'"
+                    )
+
+                if isinstance(declaration, Function):
+
+                    if existing.defined:
+                        raise SemanticError(
+                            f"Function '{name}' is defined more than once"
+                        )
+
+                    existing.defined = True
+
+    # ======================================
+    # FUNCTION BODY ANALYSIS
+    # ======================================
+
+    def analyze_function(self, function):
+
+        self.current_function = function
+
+        self.symbol_table.enter_scope()
+
+        try:
+
+            for parameter in function.parameters:
+
+                self.symbol_table.declare(
+                    parameter.name,
+                    "parameter",
+                    parameter.param_type
+                )
+
+            self.analyze_block(
+                function.body,
+                create_scope=False
+            )
+
+            # Every int function must end with
+            # an explicit top-level return expression.
+            if function.return_type == "int":
+
+                statements = function.body.statements
+
+                if not statements:
+                    raise SemanticError(
+                        f"Function '{function.name}' "
+                        "must end with return"
+                    )
+
+                last_statement = statements[-1]
+
+                if (
+                    not isinstance(last_statement, ReturnStatement)
+                    or last_statement.expression is None
+                ):
+                    raise SemanticError(
+                        f"Function '{function.name}' "
+                        "must end with return expression"
+                    )
+
+        finally:
+
+            self.symbol_table.exit_scope()
+            self.current_function = None
+
+    # ======================================
+    # BLOCK ANALYSIS
+    # ======================================
+
+    def analyze_block(self, block, create_scope=True):
+
+        if create_scope:
+            self.symbol_table.enter_scope()
+
+        try:
+
+            for statement in block.statements:
+                self.analyze_statement(statement)
+
+        finally:
+
+            if create_scope:
+                self.symbol_table.exit_scope()
+
+    # ======================================
+    # STATEMENT ANALYSIS
+    # ======================================
+
+    def analyze_statement(self, statement):
+
+        if isinstance(statement, Block):
+
+            self.analyze_block(statement)
+
+        elif isinstance(statement, VariableDeclaration):
+
+            self.symbol_table.declare(
+                statement.name,
+                "variable",
+                statement.var_type
+            )
+
+            if statement.initializer is not None:
+
+                data_type = self.analyze_expression(
+                    statement.initializer
+                )
+
+                self.require_int(
+                    data_type,
+                    "Variable initializer"
+                )
+
+        elif isinstance(statement, ReturnStatement):
+
+            expected = self.current_function.return_type
+
+            if expected == "void":
+
+                if statement.expression is not None:
+                    raise SemanticError(
+                        "Void function cannot return a value"
+                    )
+
+            else:
+
+                if statement.expression is None:
+                    raise SemanticError(
+                        "Int function must return a value"
+                    )
+
+                data_type = self.analyze_expression(
+                    statement.expression
+                )
+
+                self.require_int(
+                    data_type,
+                    "Return expression"
+                )
+
+        elif isinstance(statement, IfStatement):
+
+            data_type = self.analyze_expression(
+                statement.condition
+            )
+
+            self.require_int(data_type, "If condition")
+
+            self.analyze_statement(statement.then_branch)
+
+            if statement.else_branch is not None:
+                self.analyze_statement(statement.else_branch)
+
+        elif isinstance(statement, WhileStatement):
+
+            data_type = self.analyze_expression(
+                statement.condition
+            )
+
+            self.require_int(data_type, "While condition")
+
+            self.loop_depth += 1
+
+            try:
+                self.analyze_statement(statement.body)
+            finally:
+                self.loop_depth -= 1
+
+        elif isinstance(statement, ForStatement):
+
+            self.symbol_table.enter_scope()
+
+            try:
+
+                if statement.initializer is not None:
+
+                    if isinstance(
+                        statement.initializer,
+                        VariableDeclaration
+                    ):
+                        self.analyze_statement(
+                            statement.initializer
+                        )
+                    else:
+                        self.require_int(
+                            self.analyze_expression(
+                                statement.initializer
+                            ),
+                            "For initializer"
+                        )
+
+                if statement.condition is not None:
+
+                    self.require_int(
+                        self.analyze_expression(
+                            statement.condition
+                        ),
+                        "For condition"
+                    )
+
+                if statement.update is not None:
+
+                    self.require_int(
+                        self.analyze_expression(
+                            statement.update
+                        ),
+                        "For update"
+                    )
+
+                self.loop_depth += 1
+
+                try:
+                    self.analyze_statement(statement.body)
+                finally:
+                    self.loop_depth -= 1
+
+            finally:
+                self.symbol_table.exit_scope()
+
+        elif isinstance(statement, BreakStatement):
+
+            if self.loop_depth == 0:
+                raise SemanticError(
+                    "break statement outside a loop"
+                )
+
+        elif isinstance(statement, ContinueStatement):
+
+            if self.loop_depth == 0:
+                raise SemanticError(
+                    "continue statement outside a loop"
+                )
+
+        elif isinstance(statement, ExpressionStatement):
+
+            if statement.expression is not None:
+                self.analyze_expression(
+                    statement.expression
+                )
+
+        else:
+
+            raise SemanticError(
+                "Unknown statement type"
+            )
+
+    # ======================================
+    # EXPRESSION ANALYSIS
+    # ======================================
+
+    def require_int(self, data_type, context):
+
+        if data_type != "int":
+            raise SemanticError(
+                f"{context} requires an int expression"
+            )
+
+    def analyze_expression(self, expression):
+
+        if isinstance(expression, Number):
+
+            return "int"
+
+        elif isinstance(expression, Identifier):
+
+            symbol = self.symbol_table.lookup(
+                expression.name
+            )
+
+            if symbol is None:
+                raise SemanticError(
+                    f"Undeclared variable '{expression.name}'"
+                )
+
+            return symbol.data_type
+
+
+
+        elif isinstance(expression, BinaryOperation):
+
+            left_type = self.analyze_expression(
+                expression.left
+            )
+
+            right_type = self.analyze_expression(
+                expression.right
+            )
+
+            self.require_int(left_type, "Left operand")
+            self.require_int(right_type, "Right operand")
+
+            return "int"
+
+        elif isinstance(expression, UnaryOperation):
+
+            operand_type = self.analyze_expression(
+                expression.operand
+            )
+
+            self.require_int(operand_type, "Unary operand")
+
+            return "int"
+
+        elif isinstance(expression, Assignment):
+
+            if not isinstance(expression.target, Identifier):
+                raise SemanticError(
+                    "Assignment target must be a variable"
+                )
+
+            symbol = self.symbol_table.lookup(
+                expression.target.name
+            )
+
+            if symbol is None:
+                raise SemanticError(
+                    f"Undeclared variable "
+                    f"'{expression.target.name}'"
+                )
+
+            if symbol.symbol_type not in ("variable", "parameter"):
+                raise SemanticError(
+                    "Assignment target must be a variable"
+                )
+
+            value_type = self.analyze_expression(
+                expression.value
+            )
+
+            self.require_int(
+                value_type,
+                "Assignment"
+            )
+
+            return "int"
+
+        elif isinstance(expression, FunctionCall):
+
+            name = expression.name
+
+            if name not in self.visible_functions:
+                raise SemanticError(
+                    f"Function '{name}' called before declaration "
+                    "or not declared"
+                )
+
+            info = self.functions[name]
+
+            if len(expression.arguments) != len(
+                info.parameter_types
+            ):
+                raise SemanticError(
+                    f"Function '{name}' expects "
+                    f"{len(info.parameter_types)} arguments, "
+                    f"but got {len(expression.arguments)}"
+                )
+
+            for argument in expression.arguments:
+
+                argument_type = self.analyze_expression(
+                    argument
+                )
+
+                self.require_int(
+                    argument_type,
+                    f"Argument to function '{name}'"
+                )
+
+            return info.return_type
+
+        else:
+
+            raise SemanticError(
+                "Unknown expression type"
+            )

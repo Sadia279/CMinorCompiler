@@ -1,0 +1,6 @@
+test_100_malformed_inputs_do_not_crash (tests.test_fuzz.TestMalformedInputs.test_100_malformed_inputs_do_not_crash) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 6.381s
+
+OK

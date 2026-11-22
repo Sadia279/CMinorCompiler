@@ -1,0 +1,31 @@
+
+FUNCTION add
+RETURN_TYPE int
+PARAMETERS a__v1, b__v2
+    t1 = a__v1 + b__v2
+    RETURN t1
+END_FUNCTION
+
+FUNCTION main
+RETURN_TYPE int
+PARAMETERS 
+    sum__v3 = 0
+    i__v4 = 0
+for1:
+    t2 = i__v4 < 5
+    IF_FALSE t2 GOTO endfor3
+    t3 = CALL add(sum__v3, i__v4)
+    sum__v3 = t3
+update2:
+    t4 = i__v4 + 1
+    i__v4 = t4
+    GOTO for1
+endfor3:
+    t5 = sum__v3 != 10
+    IF_FALSE t5 GOTO else4
+    RETURN 1
+    GOTO endif5
+else4:
+endif5:
+    RETURN 0
+END_FUNCTION

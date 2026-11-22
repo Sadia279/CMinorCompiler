@@ -1,0 +1,24 @@
+FUNCTION SYMBOLS
+================
+Function: add
+  Return type: int
+  Parameters: ['int', 'int']
+  Defined: True
+
+Function: main
+  Return type: int
+  Parameters: []
+  Defined: True
+
+VARIABLE SCOPES
+===============
+Scope 0 (Type: global, Parent: None, Function: None)
+  No variables
+
+Scope 1 (Type: function, Parent: 0, Function: add)
+  a: int (parameter)
+  b: int (parameter)
+
+Scope 2 (Type: function, Parent: 0, Function: main)
+  result: int (variable)
+

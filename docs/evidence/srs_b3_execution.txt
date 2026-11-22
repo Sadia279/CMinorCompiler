@@ -1,0 +1,1 @@
+srs_b3 recursive factorial test exit status: 0

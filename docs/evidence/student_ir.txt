@@ -1,0 +1,15 @@
+
+FUNCTION add
+RETURN_TYPE int
+PARAMETERS a__v1, b__v2
+    t1 = a__v1 + b__v2
+    RETURN t1
+END_FUNCTION
+
+FUNCTION main
+RETURN_TYPE int
+PARAMETERS 
+    t2 = CALL add(10, 20)
+    result__v3 = t2
+    RETURN result__v3
+END_FUNCTION

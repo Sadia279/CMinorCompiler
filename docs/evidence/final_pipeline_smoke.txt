@@ -1,0 +1,3 @@
+PASS: source compiled to assembly, assembled, linked, and executed.
+Expected program exit status: 30
+Observed program exit status: 30

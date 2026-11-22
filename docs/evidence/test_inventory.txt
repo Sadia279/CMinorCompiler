@@ -1,0 +1,129 @@
+C MINOR COMPILER — TEST INVENTORY
+
+tests/test_end_to_end.py: 3 test methods
+  - test_all_example_programs
+  - test_backend_failure_preserves_existing_assembly
+  - test_logical_operators_short_circuit_at_runtime
+
+tests/test_fuzz.py: 1 test methods
+  - test_100_malformed_inputs_do_not_crash
+
+tests/test_ir.py: 6 test methods
+  - test_shadowed_variables_use_distinct_storage
+  - test_assignment_updates_nearest_shadowed_variable
+  - test_function_parameter_uses_internal_name
+  - test_for_loop_variable_has_separate_scope
+  - test_logical_and_uses_short_circuit_jump
+  - test_logical_or_uses_short_circuit_jump
+
+tests/test_lexer.py: 19 test methods
+  - test_keywords_and_identifiers
+  - test_numbers_and_operators
+  - test_logical_operators
+  - test_comparison_operators
+  - test_comments_are_ignored
+  - test_block_comments_are_ignored
+  - test_block_comment_between_identifiers
+  - test_unterminated_block_comment
+  - test_invalid_character
+  - test_line_and_column_tracking
+  - test_all_arithmetic_operators
+  - test_all_punctuation_and_delimiters
+  - test_whitespace_and_newline_handling
+  - test_keyword_and_identifier_boundaries
+  - test_invalid_character_reports_location
+  - test_preprocessor_directive_is_rejected
+  - test_line_splicing_is_rejected
+  - test_directive_inside_block_comment_is_accepted
+  - test_directive_inside_line_comment_is_accepted
+
+tests/test_llvm_backend.py: 26 test methods
+  - test_rejects_non_ir_program
+  - test_generates_target_triple
+  - test_generates_integer_function
+  - test_allocates_parameter_slots
+  - test_generates_addition
+  - test_generates_subtraction
+  - test_generates_multiplication
+  - test_generates_signed_division
+  - test_generates_signed_remainder
+  - test_generates_equality_comparison
+  - test_generates_remaining_comparisons
+  - test_generates_unary_minus
+  - test_generates_unary_plus
+  - test_generates_logical_not
+  - test_generates_function_call
+  - test_generates_conditional_branch
+  - test_generates_if_true_branch
+  - test_generates_void_function
+  - test_rejects_unsupported_instruction
+  - test_generates_store_and_load
+  - test_loads_function_parameter
+  - test_generates_void_function_call
+  - test_generates_zero_argument_function_call
+  - test_generates_unconditional_goto
+  - test_generates_end_function
+  - test_rejects_unsupported_binary_and_unary_operators
+
+tests/test_parser.py: 19 test methods
+  - test_function_definition
+  - test_variable_declaration
+  - test_if_else_statement
+  - test_while_loop
+  - test_for_loop
+  - test_function_call
+  - test_invalid_syntax
+  - test_function_prototype
+  - test_break_and_continue
+  - test_logical_operators
+  - test_nested_blocks
+  - test_unary_minus
+  - test_operator_precedence
+  - test_parentheses_override_precedence
+  - test_assignment_expression_statement
+  - test_for_loop_with_declaration_initializer
+  - test_empty_parameter_list
+  - test_multiple_parameters_and_locations
+  - test_multiple_function_call_arguments
+
+tests/test_semantic.py: 35 test methods
+  - test_valid_main_function
+  - test_valid_function_call
+  - test_parameter_assignment
+  - test_variable_shadowing
+  - test_duplicate_variable
+  - test_undeclared_variable
+  - test_undefined_function
+  - test_wrong_argument_count
+  - test_break_outside_loop
+  - test_continue_outside_loop
+  - test_invalid_main_return_type
+  - test_seven_parameters_rejected
+  - test_void_function_cannot_return_value
+  - test_int_function_must_return_value
+  - test_matching_prototype_and_definition
+  - test_mismatched_prototype_and_definition
+  - test_duplicate_function_definition
+  - test_prototype_without_definition
+  - test_function_scope_is_recorded
+  - test_nested_block_scope_is_recorded
+  - test_for_loop_scope_is_recorded
+  - test_shadowed_variables_belong_to_different_scopes
+  - test_scope_types_and_function_ownership
+  - test_multiple_functions_have_correct_scope_owners
+  - test_variable_outside_block_scope_is_rejected
+  - test_for_initializer_variable_outside_loop_is_rejected
+  - test_function_call_before_declaration_is_rejected
+  - test_too_many_function_arguments
+  - test_assignment_to_number_is_rejected
+  - test_duplicate_parameter_names_are_rejected
+  - test_variable_used_before_declaration_is_rejected
+  - test_void_call_cannot_initialize_int_variable
+  - test_void_call_cannot_be_if_condition
+  - test_function_call_after_prototype
+  - test_break_and_continue_in_nested_loops
+
+Total test methods: 109
+Additional malformed-input cases: 100 distinct inputs (test_fuzz.py)
+End-to-end examples: 7 .cm programs
+Note: These counts are not added together as unique test cases without reviewing overlap.
